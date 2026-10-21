@@ -1,0 +1,9 @@
+*~
+*.fasta
+*.sig.zip
+.snakemake
+reads
+genomes
+*.csv
+*.log
+.ipynb_checkpoints
