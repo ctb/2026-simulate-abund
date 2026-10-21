@@ -7,3 +7,4 @@ genomes
 *.csv
 *.log
 .ipynb_checkpoints
+mapping

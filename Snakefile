@@ -5,11 +5,13 @@ rule all:
         "genomes/a.sig.zip",
         "genomes/b.sig.zip",
         expand("reads/a.reads-{cov}.sig.zip", cov=COVS),
+        expand("mapping/R-{cov}.x.a.depth.txt", cov=COVS),
+        expand("mapping/R-{cov}.x.b.depth.txt", cov=COVS),
+        expand('reads.mapping.{genome}.csv', genome=['a', 'b']),
         "reads/mf.csv",
         "reads/mf.txt",
         "reads.isect.sig.zip",
         'reads.isect.abund.csv',
-        #expand("reads/b.reads-{cov}.sig.zip", cov=COVS),
 
 rule make_a_fasta:
     output: "genomes/a.fasta"
@@ -87,4 +89,41 @@ rule kmer_est_abund:
         ../2026-pancoding-core/scripts/isect-estimate-species-abundances.py \
             {input} --output-kmer {output.kmer} --output-abund {output.abund} \
             --no-unmangle
+    """
+
+# NOTE: reads are always 'a' reads, but being mapped to a or b genomes.
+rule map_reads:
+    input:
+        fa='genomes/{genome}.fasta',
+        metag='reads/a.reads-{cov}.fasta',
+    output:
+        bam='mapping/R-{cov}.x.{genome}.bam',
+        bai='mapping/R-{cov}.x.{genome}.bam.bai',
+    threads: 8
+    shell: """
+        minimap2 -ax sr -t {threads} {input.fa:q} {input.metag:q} | samtools view -b -F 4 - | samtools sort - > {output.bam:q}
+        samtools index {output.bam:q}
+    """
+
+rule bam_to_depth:
+    input:
+        bam='mapping/R-{cov}.x.{genome}.bam',
+        bai='mapping/R-{cov}.x.{genome}.bam.bai',
+        fa='genomes/{genome}.fasta',
+    output:
+        "mapping/R-{cov}.x.{genome}.depth.txt",
+    threads: 8
+    shell: """
+        samtools depth -aa {input.bam:q} {input.fa:q} > {output:q}
+    """
+
+# summarize all the highcov mapping depth files -> CSV
+rule summarize_depth:
+    input:
+        expand("mapping/R-{cov}.x.{{genome}}.depth.txt",
+               cov=COVS)
+    output:
+        'reads.mapping.{genome}.csv',
+    shell: """
+        ../2026-pancoding-core/scripts/summarize-mapping-depth-to-csv.py {input} -o {output}
     """

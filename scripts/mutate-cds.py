@@ -31,7 +31,13 @@ def main():
         newseq = list(r.sequence)
         for i in range(int(round(len(newseq) * args.mutation_p / 100))):
             pos = random.randrange(0, len(newseq))
-            ch = random.choice(DNA)
+            oldch = newseq[pos]
+            ch = oldch
+
+            # pick a different base.
+            while ch == oldch:
+                ch = random.choice(DNA)
+
             newseq[pos] = ch.lower()
 
         newseq = "".join(newseq)
