@@ -8,3 +8,6 @@ genomes
 *.log
 .ipynb_checkpoints
 mapping
+# pixi environments
+.pixi/*
+!.pixi/config.toml
