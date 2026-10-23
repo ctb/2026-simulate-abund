@@ -91,17 +91,32 @@ rule kmer_est_abund:
             --no-unmangle
     """
 
+# index
+rule index_genomes:
+    input:
+        "genomes/{genome}.fasta",
+    output:
+        "genomes/{genome}.1.bt2",
+    shell: """
+        bowtie2-build {input} genomes/{wildcards.genome}
+    """
+
 # NOTE: reads are always 'a' reads, but being mapped to a or b genomes.
 rule map_reads:
     input:
         fa='genomes/{genome}.fasta',
         metag='reads/a.reads-{cov}.fasta',
+        idx="genomes/{genome}.1.bt2",
     output:
+        sam=temporary("mapping/R-{cov}.x.{genome}.sam"),
         bam='mapping/R-{cov}.x.{genome}.bam',
         bai='mapping/R-{cov}.x.{genome}.bam.bai',
     threads: 8
     shell: """
-        minimap2 -ax sr -t {threads} {input.fa:q} {input.metag:q} | samtools view -b -F 4 - | samtools sort - > {output.bam:q}
+        bowtie2 -f -p {threads} --sensitive \
+            -x genomes/{wildcards.genome} \
+            -U {input.metag} -S {output.sam}
+        samtools view -b -F 4 {output.sam} | samtools sort - > {output.bam:q}
         samtools index {output.bam:q}
     """
 
@@ -125,5 +140,5 @@ rule summarize_depth:
     output:
         'reads.mapping.{genome}.csv',
     shell: """
-        ../2026-pancoding-core/scripts/summarize-mapping-depth-to-csv.py {input} -o {output}
+        ../2026-pancoding-core/scripts/summarize-mapping-depth-to-csv.py {input} -o {output} --exclude-ends 1
     """
