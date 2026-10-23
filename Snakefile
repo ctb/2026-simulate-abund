@@ -8,7 +8,6 @@ rule all:
         expand("pure/mapping/R-{cov}.x.a.depth.txt", cov=COVS),
         expand("pure/mapping/R-{cov}.x.b.depth.txt", cov=COVS),
         expand('pure/mapping.{genome}.csv', genome=['a', 'b']),
-        "pure/reads/mf.csv",
         "pure/reads/mf.txt",
         "pure/reads.isect.sig.zip",
         'pure/reads.isect.abund.csv',
@@ -47,15 +46,6 @@ rule sketch_reads:
     shell: """
         sourmash sketch dna -p scaled=100,k=21,abund --name R-{wildcards.cov} \
            {input} -o {output}
-    """
-
-rule mf:
-    input:
-        expand("pure/reads/a.reads-{cov}.sig.zip", cov=COVS),
-    output:
-        "pure/reads/mf.csv"
-    shell: """
-        sourmash sig collect {input} -o {output} -F csv --abspath
     """
 
 rule make_list:
