@@ -1,4 +1,7 @@
 #! /usr/bin/env python
+"""
+Generate a mutated version of a FASTA file.
+"""
 import sys
 import argparse
 import random
@@ -9,7 +12,8 @@ DNA=["A", "C", "G", "T"]
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('fasta_file')
-    p.add_argument('-m', '--mutation-p', type=int, default=4)
+    p.add_argument('-m', '--mutation-p', type=int, default=4,
+                   help="percentage of bases to change (default: 4)")
     p.add_argument('--new-prefix', required=False)
     p.add_argument('-o', '--output-fasta', required=True)
     p.add_argument('--seed', type=int, default=42)

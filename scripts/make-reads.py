@@ -1,4 +1,7 @@
 #! /usr/bin/env python
+"""
+Make simulated (error free) reads from a single genome.
+"""
 import sys
 import argparse
 import random

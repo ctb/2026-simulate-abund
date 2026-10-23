@@ -1,4 +1,7 @@
 #! /usr/bin/env python
+"""
+Make a random set of high-complexity "coding" sequences, at random.
+"""
 import sys
 import argparse
 import random
