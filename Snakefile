@@ -4,14 +4,14 @@ rule all:
     input:
         "genomes/a.sig.zip",
         "genomes/b.sig.zip",
-        expand("reads/a.reads-{cov}.sig.zip", cov=COVS),
-        expand("mapping/R-{cov}.x.a.depth.txt", cov=COVS),
-        expand("mapping/R-{cov}.x.b.depth.txt", cov=COVS),
-        expand('reads.mapping.{genome}.csv', genome=['a', 'b']),
-        "reads/mf.csv",
-        "reads/mf.txt",
-        "reads.isect.sig.zip",
-        'reads.isect.abund.csv',
+        expand("pure/reads/a.reads-{cov}.sig.zip", cov=COVS),
+        expand("pure/mapping/R-{cov}.x.a.depth.txt", cov=COVS),
+        expand("pure/mapping/R-{cov}.x.b.depth.txt", cov=COVS),
+        expand('pure/mapping.{genome}.csv', genome=['a', 'b']),
+        "pure/reads/mf.csv",
+        "pure/reads/mf.txt",
+        "pure/reads.isect.sig.zip",
+        'pure/reads.isect.abund.csv',
 
 rule make_a_fasta:
     output: "genomes/a.fasta"
@@ -28,7 +28,7 @@ rule mutate_a_to_b:
             
 rule make_reads_a:
     input: "genomes/{f}.fasta"
-    output: "reads/{f}.reads-{cov}.fasta"
+    output: "pure/reads/{f}.reads-{cov}.fasta"
     shell: """
         scripts/make-reads.py {input} -o {output} -C {wildcards.cov}
     """
@@ -42,8 +42,8 @@ rule sketch_genome:
     """
             
 rule sketch_reads:
-    input: "reads/{f}.reads-{cov}.fasta"
-    output: "reads/{f}.reads-{cov}.sig.zip",
+    input: "pure/reads/{f}.reads-{cov}.fasta"
+    output: "pure/reads/{f}.reads-{cov}.sig.zip",
     shell: """
         sourmash sketch dna -p scaled=100,k=21,abund --name R-{wildcards.cov} \
            {input} -o {output}
@@ -51,18 +51,18 @@ rule sketch_reads:
 
 rule mf:
     input:
-        expand("reads/a.reads-{cov}.sig.zip", cov=COVS),
+        expand("pure/reads/a.reads-{cov}.sig.zip", cov=COVS),
     output:
-        "reads/mf.csv"
+        "pure/reads/mf.csv"
     shell: """
         sourmash sig collect {input} -o {output} -F csv --abspath
     """
 
 rule make_list:
     input:
-        expand("reads/a.reads-{cov}.sig.zip", cov=COVS),
+        expand("pure/reads/a.reads-{cov}.sig.zip", cov=COVS),
     output:
-        "reads/mf.txt"
+        "pure/reads/mf.txt"
     shell: """
         ls -1 {input} > {output}
     """
@@ -70,9 +70,9 @@ rule make_list:
 rule isect:
     input:
         genomes=expand("genomes/{g}.sig.zip", g=['a', 'b']),
-        against='reads/mf.txt'
+        against='pure/reads/mf.txt'
     output:
-        "reads.isect.sig.zip"
+        "pure/reads.isect.sig.zip"
     shell: """
          ../2026-pancoding-core/scripts/extract-intersection-sigs.py \
              --query-sigs {input.genomes} --metagenomes {input.against} \
@@ -81,10 +81,10 @@ rule isect:
 
 rule kmer_est_abund:
     input:
-        "reads.isect.sig.zip"
+        "pure/reads.isect.sig.zip"
     output:
-        kmer='reads.isect.kmer_stats.csv',
-        abund='reads.isect.abund.csv',
+        kmer='pure/reads.isect.kmer_stats.csv',
+        abund='pure/reads.isect.abund.csv',
     shell: """
         ../2026-pancoding-core/scripts/isect-estimate-species-abundances.py \
             {input} --output-kmer {output.kmer} --output-abund {output.abund} \
@@ -95,10 +95,10 @@ rule kmer_est_abund:
 rule map_reads:
     input:
         fa='genomes/{genome}.fasta',
-        metag='reads/a.reads-{cov}.fasta',
+        metag='pure/reads/a.reads-{cov}.fasta',
     output:
-        bam='mapping/R-{cov}.x.{genome}.bam',
-        bai='mapping/R-{cov}.x.{genome}.bam.bai',
+        bam='pure/mapping/R-{cov}.x.{genome}.bam',
+        bai='pure/mapping/R-{cov}.x.{genome}.bam.bai',
     threads: 8
     shell: """
         minimap2 -ax sr -t {threads} {input.fa:q} {input.metag:q} | samtools view -b -F 4 - | samtools sort - > {output.bam:q}
@@ -107,11 +107,11 @@ rule map_reads:
 
 rule bam_to_depth:
     input:
-        bam='mapping/R-{cov}.x.{genome}.bam',
-        bai='mapping/R-{cov}.x.{genome}.bam.bai',
+        bam='pure/mapping/R-{cov}.x.{genome}.bam',
+        bai='pure/mapping/R-{cov}.x.{genome}.bam.bai',
         fa='genomes/{genome}.fasta',
     output:
-        "mapping/R-{cov}.x.{genome}.depth.txt",
+        "pure/mapping/R-{cov}.x.{genome}.depth.txt",
     threads: 8
     shell: """
         samtools depth -aa {input.bam:q} {input.fa:q} > {output:q}
@@ -120,10 +120,10 @@ rule bam_to_depth:
 # summarize all the highcov mapping depth files -> CSV
 rule summarize_depth:
     input:
-        expand("mapping/R-{cov}.x.{{genome}}.depth.txt",
+        expand("pure/mapping/R-{cov}.x.{{genome}}.depth.txt",
                cov=COVS)
     output:
-        'reads.mapping.{genome}.csv',
+        'pure/mapping.{genome}.csv',
     shell: """
         ../2026-pancoding-core/scripts/summarize-mapping-depth-to-csv.py {input} -o {output}
     """
