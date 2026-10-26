@@ -49,6 +49,8 @@ def main():
             ofp.write(f'>{name}\n{read}\n')
             total_wrote += len(read)
 
+        print(f"genome {filename}: {num_reads}")
+
     ofp.close()
     print(f"wrote {total_wrote/1000:.1f} kb")
 

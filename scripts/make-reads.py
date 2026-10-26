@@ -44,6 +44,8 @@ def main():
     ofp.close()
 
     print(f"wrote {total_wrote/1000:.1f} kb")
+    print(f"calculated coverage: {total_wrote / total:.1f}")
+    print(f"desired coverage: {args.coverage:.1f}")
 
 
 if __name__ == '__main__':
