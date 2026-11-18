@@ -13,6 +13,10 @@ rule all:
         "mixed_90_10/reads.isect.sig.zip",
         "mixed_90_10/reads.isect.abund.csv",
         expand('mixed_90_10/mapping.{genome}.csv', genome=['a', 'b']),
+        "pang_90_10/reads.isect.sig.zip",
+        "pang_90_10/reads.isect.abund.csv",
+        expand('pang_90_10/mapping.a+b.csv'),
+
 
 rule make_a_fasta:
     output: "genomes/a.fasta"
@@ -24,8 +28,14 @@ rule mutate_a_to_b:
     input: "genomes/a.fasta"
     output: "genomes/b.fasta"
     shell: """
-        scripts/mutate-cds.py {input} -m 3 -o {output}
+        scripts/mutate-cds.py {input} -m 3 -o {output} --new-prefix="B"
     """
+
+rule combine_a_b:
+    input: "genomes/a.fasta", "genomes/b.fasta",
+    output: "genomes/a+b.fasta"
+    shell: "cat {input} > {output}"
+    
             
 rule make_reads_a:
     input: "genomes/a.fasta"
@@ -40,6 +50,17 @@ rule make_mixed_reads_a_b_90_10:
         "genomes/b.fasta",
     output:
         'mixed_90_10/reads/reads-{cov}.fasta',
+    shell: """
+        scripts/make-mixed-reads.py {input} -o {output} -C {wildcards.cov} \
+           --mix 9:1
+    """
+
+rule make_pang_reads_a_b_90_10:
+    input:
+        "genomes/a.fasta",
+        "genomes/b.fasta",
+    output:
+        'pang_90_10/reads/reads-{cov}.fasta',
     shell: """
         scripts/make-mixed-reads.py {input} -o {output} -C {wildcards.cov} \
            --mix 9:1
@@ -87,6 +108,27 @@ rule make_mixed_list:
         expand("mixed_90_10/reads/reads-{cov}.sig.zip", cov=COVS),
     output:
         "mixed_90_10/reads/mf.txt"
+    shell: """
+        ls -1 {input} > {output}
+    """
+
+rule isect_pang_90_10:
+    input:
+        genomes="genomes/a+b.sig.zip",
+        against='pang_90_10/reads/mf.txt'
+    output:
+        "pang_90_10/reads.isect.sig.zip"
+    shell: """
+         ../2026-pancoding-core/scripts/extract-intersection-sigs.py \
+             --query-sigs {input.genomes} --metagenomes {input.against} \
+             --scaled 100 -k 21 -O {output}
+    """
+
+rule make_pang_list:
+    input:
+        expand("pang_90_10/reads/reads-{cov}.sig.zip", cov=COVS),
+    output:
+        "pang_90_10/reads/mf.txt"
     shell: """
         ls -1 {input} > {output}
     """
