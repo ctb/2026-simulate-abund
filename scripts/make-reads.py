@@ -34,11 +34,22 @@ def main():
         seqi = random.randrange(0, n_seqs)
         seq = seqs[seqi]
 
-        pos = random.randrange(0, len(seq) - readlen)
+        # select a point in sequence at random
+        pos = random.randrange(0, len(seq))
+
+        # now, select an interval start from all possible interval starts
+        # that include this point.
+        # (this is called "rejection sampling".)
+        lo = max(0, pos - readlen + 1)
+        hi = min(pos, len(seq) - readlen)
+
+        pos = random.randrange(lo, hi + 1)
+
         read = seq[pos:pos+readlen]
         if random.randint(0, 1): # rc?
             read = screed.rc(read)
 
+        assert len(read) == readlen
         ofp.write(f'>{name}\n{read}\n')
         total_wrote += len(read)
     ofp.close()
